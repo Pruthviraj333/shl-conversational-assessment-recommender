@@ -20,12 +20,22 @@ class Retriever:
 
         with open(metadata_path, "r", encoding="utf-8") as f:
             self.catalog = json.load(f)
-
-        self.model = SentenceTransformer("all-MiniLM-L6-v2")
+         
+        # Lazy-load embedding model to reduce startup memory
+        self.model = None
 
         print(f"Retriever loaded ({len(self.catalog)} assessments)")
 
     def embed_query(self, query: str):
+
+        if self.model is None:
+
+            print("Loading embedding model...")
+
+            self.model = SentenceTransformer(
+            "all-MiniLM-L6-v2"
+        )
+
         embedding = self.model.encode(
             [query],
             convert_to_numpy=True,

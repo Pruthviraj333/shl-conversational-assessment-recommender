@@ -15,7 +15,10 @@ class ChatService:
     def __init__(self):
 
         self.analyzer = ConversationAnalyzer()
-        self.retriever = Retriever()
+
+        # Lazy load Retriever
+        self.retriever = None
+
         self.llm = GeminiClient()
 
     def _generate_json_response(self, prompt):
@@ -29,7 +32,6 @@ class ChatService:
 
         except Exception as e:
 
-            # Log the real error for debugging
             print(f"[Gemini Error] {e}")
 
             return {
@@ -61,6 +63,16 @@ class ChatService:
             }
 
     def chat(self, messages):
+
+        # ---------------------------------------
+        # Lazy initialize Retriever
+        # ---------------------------------------
+
+        if self.retriever is None:
+
+            print("Loading Retriever...")
+
+            self.retriever = Retriever()
 
         # ---------------------------------------
         # Analyze conversation
