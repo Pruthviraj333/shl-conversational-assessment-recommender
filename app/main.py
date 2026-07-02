@@ -1,27 +1,27 @@
 from fastapi import FastAPI
-from pydantic import BaseModel
 
+from app.models.api import ChatRequest
 from app.services.chat_service import ChatService
 
 app = FastAPI(
-    title="SHL Assessment Recommender"
+    title="SHL Conversational Assessment Recommender",
+    version="1.0.0",
 )
 
 service = ChatService()
 
 
-class Message(BaseModel):
-    role: str
-    content: str
-
-
-class ChatRequest(BaseModel):
-    messages: list[Message]
+@app.get("/")
+def root():
+    return {
+        "message": "SHL Conversational Assessment Recommender API",
+        "docs": "/docs",
+        "health": "/health",
+    }
 
 
 @app.get("/health")
 def health():
-
     return {
         "status": "ok"
     }
