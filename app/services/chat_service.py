@@ -13,13 +13,19 @@ from app.utils.query_builder import QueryBuilder
 class ChatService:
 
     def __init__(self):
-
+        
+        print("Initializing ChatService")
         self.analyzer = ConversationAnalyzer()
-
+        print("ConversationAnalyzer OK")
+        
         # Lazy load Retriever
         self.retriever = None
 
+        print("Retriever placeholder OK")
+
         self.llm = GeminiClient()
+        
+        print("GeminiClient OK")
 
     def _generate_json_response(self, prompt):
         """

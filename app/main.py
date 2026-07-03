@@ -8,8 +8,9 @@ app = FastAPI(
     version="1.0.0",
 )
 
+print("Creating ChatService...")
 service = ChatService()
-
+print("ChatService created.")
 
 @app.get("/")
 def root():
