@@ -4,7 +4,7 @@ from pathlib import Path
 
 import faiss
 import numpy as np
-from sentence_transformers import SentenceTransformer
+SentenceTransformer = None
 
 
 class Retriever:
@@ -28,13 +28,21 @@ class Retriever:
 
     def embed_query(self, query: str):
 
+        global SentenceTransformer
+
+        if SentenceTransformer is None:
+
+            print("Importing sentence-transformers...")
+
+            from sentence_transformers import SentenceTransformer
+
         if self.model is None:
 
             print("Loading embedding model...")
 
             self.model = SentenceTransformer(
-            "all-MiniLM-L6-v2"
-        )
+                "all-MiniLM-L6-v2"
+            )
 
         embedding = self.model.encode(
             [query],
