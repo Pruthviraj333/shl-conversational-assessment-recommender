@@ -4,6 +4,7 @@ from pathlib import Path
 
 import faiss
 import numpy as np
+
 SentenceTransformer = None
 
 
@@ -13,6 +14,7 @@ class Retriever:
     """
 
     def __init__(self):
+
         index_path = Path("data/index/faiss.index")
         metadata_path = Path("data/index/metadata.json")
 
@@ -20,8 +22,8 @@ class Retriever:
 
         with open(metadata_path, "r", encoding="utf-8") as f:
             self.catalog = json.load(f)
-         
-        # Lazy-load embedding model to reduce startup memory
+
+        # Lazy-load embedding model
         self.model = None
 
         print(f"Retriever loaded ({len(self.catalog)} assessments)")
@@ -30,19 +32,55 @@ class Retriever:
 
         global SentenceTransformer
 
+        # ---------------------------------------
+        # Lazy import sentence-transformers
+        # ---------------------------------------
+
         if SentenceTransformer is None:
 
-            print("Importing sentence-transformers...")
+            try:
 
-            from sentence_transformers import SentenceTransformer
+                print("Importing sentence-transformers...")
+
+                from sentence_transformers import (
+                    SentenceTransformer as ST,
+                )
+
+                SentenceTransformer = ST
+
+                print(
+                    "sentence-transformers imported successfully."
+                )
+
+            except Exception as e:
+
+                print("IMPORT ERROR:", repr(e))
+                raise
+
+        # ---------------------------------------
+        # Lazy load embedding model
+        # ---------------------------------------
 
         if self.model is None:
 
-            print("Loading embedding model...")
+            try:
 
-            self.model = SentenceTransformer(
-                "all-MiniLM-L6-v2"
-            )
+                print("Loading embedding model...")
+
+                self.model = SentenceTransformer(
+                    "all-MiniLM-L6-v2"
+                )
+
+                print("Embedding model loaded.")
+
+            except Exception as e:
+
+                print("MODEL ERROR:", repr(e))
+                raise
+
+        # ---------------------------------------
+        # Generate embedding
+        # ---------------------------------------
 
         embedding = self.model.encode(
             [query],
@@ -70,52 +108,34 @@ class Retriever:
         text = item.get("search_text", "").lower()
         name = item["name"].lower()
 
-        # ---------------------------------------------------
         # Exact assessment name boost
-        # ---------------------------------------------------
-
         if name in query:
             score += 0.50
 
-        # ---------------------------------------------------
         # Keyword overlap
-        # ---------------------------------------------------
-
         query_words = set(re.findall(r"\w+", query))
         text_words = set(re.findall(r"\w+", text))
 
         overlap = len(query_words & text_words)
         score += overlap * 0.03
 
-        # ---------------------------------------------------
         # Category boost
-        # ---------------------------------------------------
-
         if item.get("keys"):
 
             if item["keys"].lower() in query:
                 score += 0.20
 
-        # ---------------------------------------------------
         # Test type boost
-        # ---------------------------------------------------
-
         if item.get("test_type"):
 
             if item["test_type"].lower() in query:
                 score += 0.10
 
-        # ---------------------------------------------------
         # Prefer assessments over reports
-        # ---------------------------------------------------
-
         if "report" in name:
             score -= 0.20
 
-        # ---------------------------------------------------
         # Personality heuristic
-        # ---------------------------------------------------
-
         if "personality" in query:
 
             if (
@@ -127,19 +147,13 @@ class Retriever:
             if "report" in name:
                 score -= 0.10
 
-        # ---------------------------------------------------
         # Leadership heuristic
-        # ---------------------------------------------------
-
         if "leadership" in query:
 
             if "leadership" in name:
                 score += 0.20
 
-        # ---------------------------------------------------
         # Coding heuristic
-        # ---------------------------------------------------
-
         if "coding" in query or "developer" in query:
 
             if (
@@ -155,7 +169,6 @@ class Retriever:
 
         embedding = self.embed_query(query)
 
-        # Retrieve more candidates than required
         scores, indices = self.index.search(
             embedding,
             15,
